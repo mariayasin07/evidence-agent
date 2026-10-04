@@ -17,7 +17,7 @@ if "cfg" not in ss:
     ss.cfg = load_settings()
 cfg = ss.cfg
 ss.setdefault("page", "New Research")
-ss.setdefault("api_key", env_api_key())
+ss.setdefault("user_api_key", "")  # BYOK: per-session only, never persisted
 ss.setdefault("models", {})
 ss.setdefault("current_id", None)
 ss.setdefault("view_id", None)
@@ -54,7 +54,7 @@ def go(page, **kw):
 
 
 def make_llm():
-    return LLMProvider(cfg, ss.api_key)
+    return LLMProvider(cfg, ss.user_api_key or env_api_key())
 
 
 def cites(ns, refs):
@@ -290,9 +290,12 @@ def page_settings():
                 S(st.text_input, "Base URL (OpenAI-compatible)", "cloud_base_url", placeholder="https://host/v1")
             else:
                 st.caption(f"Base URL: {PRESETS[cfg['cloud_provider']]}")
-            st.text_input("API key", type="password", key="api_key_w", value=ss.api_key,
-                          on_change=lambda: ss.__setitem__("api_key", ss.api_key_w),
-                          help="Kept in this browser session only (or set LLM_API_KEY in .env). Never written to settings.")
+            st.info("Bring your own API key: enter your own cloud API key below. It is kept only in your current browser session, "
+                    "used for your research, and never saved to settings, history, reports or any file.")
+            st.text_input("Your API key", type="password", key="api_key_w", value=ss.user_api_key,
+                          on_change=lambda: ss.__setitem__("user_api_key", ss.api_key_w.strip()))
+            st.caption("Using your session key." if ss.user_api_key else
+                       ("No key entered — using the server's default key." if env_api_key() else "No key entered yet."))
             key = f"cloud|{cfg['cloud_provider']}|{cfg['cloud_base_url']}"
             if st.button("Check connection / refresh models"):
                 ok, msg, models = make_llm().check()

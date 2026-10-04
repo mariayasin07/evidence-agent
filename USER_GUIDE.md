@@ -53,6 +53,7 @@ The agent works through six stages, in order:
 | Research History | Every finished research task is saved separately and can be reopened or deleted. |
 | Settings | Light/Dark theme, AI provider and model, research limits, trust options, export preferences. |
 | Ollama and Cloud API | One provider setting used by the whole agent. |
+| Bring Your Own API Key (BYOK) | For Cloud API, each user enters their own key in Settings. It lives only in that user's session and is never saved to a file. |
 | PDF / DOCX export | Download any saved report. |
 
 ---
@@ -98,7 +99,7 @@ You normally only edit `.env`; everything else is changed from the app's Setting
 | **Internet** | Required for DuckDuckGo, OpenAlex and Crossref searches (and for Cloud APIs). |
 | **An AI model** | Either **Ollama** (local, free) or a **Cloud API** key. One of the two is required. |
 | **Ollama** | Installed and running, with at least one model downloaded. Any chat model that Ollama can run works; the app lists whatever you have installed. |
-| **Cloud API key** | Only if you choose Cloud API (OpenAI, Anthropic, Google Gemini, OpenRouter, Groq or a custom OpenAI-compatible service). |
+| **Cloud API key** | Only if you choose Cloud API (OpenAI, Anthropic, Google Gemini, OpenRouter, Groq or a custom OpenAI-compatible service). **Each user brings their own key** and enters it in the app (see [section 11](#11-cloud-api-setup)). |
 | **Accounts for the search sources** | None. DuckDuckGo, OpenAlex and Crossref need no key. |
 
 ---
@@ -145,11 +146,11 @@ notepad .env
 | Variable | Purpose |
 |---|---|
 | `OLLAMA_HOST` | Ollama address. Default `http://localhost:11434`. |
-| `LLM_API_KEY` | Your Cloud API key (only if using Cloud API). |
+| `LLM_API_KEY` | **Optional** default Cloud API key for your own local use. Not required: Cloud API users enter their own key in the app, and a key entered in the app always takes priority. Leave it empty if you want every user to bring their own key. |
 | `LLM_BASE_URL` | Only used when the Cloud provider is **Custom (OpenAI-compatible)**. |
 | `CONTACT_EMAIL` | Optional email sent to OpenAlex/Crossref for more reliable access. |
 
-Save the file. Never share or upload `.env`. You can skip this step entirely if you use the defaults and type your API key in Settings.
+Save the file. Never share or upload `.env`. You can skip this step entirely: the defaults work for Ollama, and Cloud API users enter their own key inside the app.
 
 ### Step 6 — Set up Ollama (if using Ollama)
 1. Install Ollama from <https://ollama.com/download> and start it (it runs in the background after install).
@@ -165,7 +166,9 @@ Save the file. Never share or upload `.env`. You can skip this step entirely if 
 See [section 10](#10-ollama-setup-and-usage) for more.
 
 ### Step 7 — Configure Cloud API (if using Cloud API)
-Put your key in `.env` as `LLM_API_KEY=...` **or** paste it into **Settings → AI / Model** after the app starts. See [section 11](#11-cloud-api-setup).
+No file setup is needed. After the app starts, go to **Settings → AI / Model → Cloud API** and enter **your own** API key (Bring Your Own Key). It is kept only in your current session and is not saved to any file, so you may need to enter it again after reloading the page. See [section 11](#11-cloud-api-setup).
+
+> *Optional:* if the app is only for you, you may put `LLM_API_KEY=...` in `.env` as a default. A key typed in the app always takes priority over it.
 
 ### Step 8 — Start the app
 With `(.venv)` active, in the project folder:
@@ -177,7 +180,7 @@ streamlit run app.py
 Streamlit prints a **Local URL**. Open <http://localhost:8501> in your browser if it does not open automatically.
 
 ### Step 10 — Choose your model
-Go to **Settings → AI / Model**, pick the provider, click **Check connection / refresh models**, and select a model (details in sections 10 and 11).
+Go to **Settings → AI / Model**, pick the provider, click **Check connection / refresh models**, and select a model. For Ollama use the default host `http://localhost:11434` (section 10); for Cloud API enter your own key first (section 11). Continue when the page shows **✅ Ready**.
 
 ### Stopping and restarting
 - **Stop:** click in the PowerShell window and press `Ctrl + C`.
@@ -203,6 +206,8 @@ The left sidebar has four pages — **New Research**, **Research History**, **Se
 | **Research depth** | **Standard** (faster) or **Deep Dive** (more searches, sources and findings; slower). |
 | **Start research** | Starts the agent. Shows a warning if the box is empty, or an error if the model is not configured. |
 | **Model line** | Shows which provider and model will be used. |
+
+If **Start research** shows a red message instead of starting, the model is not ready — open **Settings → AI / Model** and follow the ⚠️ message there.
 
 When research completes, the report appears below. On later visits to New Research, the most recent report is shown under "Latest research".
 
@@ -234,7 +239,7 @@ Five tabs. Changes are saved automatically.
 | Tab | Controls |
 |---|---|
 | **Appearance** | **Theme:** Light or Dark (near-black). |
-| **AI / Model** | **Provider:** Ollama or Cloud API. Ollama: host URL, **Check connection / refresh models**, model. Cloud API: provider, base URL (Custom only), API key, **Check connection / refresh models**, model. A line shows ✅ Ready or what is missing. |
+| **AI / Model** | **Provider:** Ollama or Cloud API. Ollama: host URL, **Check connection / refresh models**, model. Cloud API: a notice that you bring your own key, **Cloud provider**, base URL (Custom only), **Your API key** (password field) with a status line, **Check connection / refresh models**, model. A line at the bottom shows ✅ Ready or what is missing. See [section 11](#11-cloud-api-setup). |
 | **Research** | Default research depth; max sources analysed for Standard (6–14) and Deep Dive (12–30); model call timeout (30–300 s); search timeout (5–60 s). |
 | **Trust & verification** | Minimum source credibility score (0–80); Prefer scholarly sources; Drop single-source findings from low-credibility sources; Strict quote matching. |
 | **Export** | Default format (PDF/DOCX); include Evidence Map; include evidence quotes; include process log. |
@@ -344,25 +349,65 @@ If one search fails or times out, the agent says so in the log and continues. If
 
 ## 11. Cloud API Setup
 
-1. Settings → AI / Model → Provider **Cloud API**.
-2. **Cloud provider:** OpenAI, Anthropic, Google Gemini, OpenRouter, Groq, or **Custom (OpenAI-compatible)**. For Custom, enter the base URL (for example `https://host/v1`) or set `LLM_BASE_URL` in `.env`.
-3. **API key:** set `LLM_API_KEY` in `.env`, **or** paste it into the **API key** field in Settings.
-4. Click **Check connection / refresh models**, then pick a **Model**. If the provider does not return a model list, a **Model name** text box appears — type the model name manually.
-5. Confirm ✅ Ready.
+The Cloud API option uses **Bring Your Own Key (BYOK)**: you use **your own** API key from a cloud provider. The app does not supply a key for you, and the key you enter is used only for **your** session.
 
-**Keeping the key secure**
-- The key typed in Settings is held only in your browser session and is **not** written to the settings file; you re-enter it after restarting the app, or keep it in `.env`.
-- `.env` is listed in `.gitignore`; never upload it or share it.
-- Do not paste the key in screenshots or chats.
+### 11.1 Step by step
 
-**Common problems**
+1. Open **Settings → AI / Model**.
+2. Set **Provider** to **Cloud API**. A blue notice appears explaining that you bring your own key and that it is kept only in your browser session.
+3. Choose a **Cloud provider**: OpenAI, Anthropic, Google Gemini, OpenRouter, Groq, or **Custom (OpenAI-compatible)**.
+   - For every provider except Custom, the base URL is filled in automatically and shown as *Base URL: …* — there is nothing to type.
+   - For **Custom**, enter the **Base URL (OpenAI-compatible)** of your service, for example `https://host/v1`.
+4. Paste your key into **Your API key** and press **Enter**. The field hides what you type.
+5. Check the status line directly under the key box (see 11.2).
+6. Click **Check connection / refresh models**. On success you see "Connected — N model(s) available." and the **Model** dropdown fills with your provider's models. If the provider does not return a list, a **Model name** text box appears — type the model name manually.
+7. Select a **Model**.
+8. Confirm the bottom line shows **✅ Ready**, then go to **New Research**.
+
+### 11.2 Status messages
+
+| Where | Message | Meaning |
+|---|---|---|
+| Under the key box | **Using your session key.** | Your key is entered and will be used for your research. |
+| Under the key box | **No key entered yet.** | You have not entered a key. |
+| Under the key box | **No key entered — using the server's default key.** | Appears only if the app's owner configured a default key (`LLM_API_KEY`). Enter your own key to use it instead. |
+| Bottom of the tab | **✅ Ready** | A model, a key (yours or the server's default) and a base URL are all set. |
+| Bottom of the tab | **⚠️ Select a model in Settings → AI / Model.** | Click **Check connection / refresh models** and choose a model. |
+| Bottom of the tab | **⚠️ Add your API key in Settings → AI / Model (or LLM_API_KEY in .env).** | No key is available. Enter your own key in the key box. |
+| Bottom of the tab | **⚠️ Set the host / base URL in Settings → AI / Model.** | Only for **Custom**: enter the base URL. |
+
+### 11.3 How your key is handled
+
+- Your key is stored **only in your current Streamlit session** (your browser tab's session). Sessions of different users are separate.
+- It is **not** written to the settings file, Research History, reports, exports, logs or any project file.
+- It is used only to make your session's model calls to the provider you selected. A key you enter takes priority over any server default.
+- When your session ends, you reload the page, or the app restarts, **you may need to enter the key again.**
+
+> **Security:** never publish your API key in GitHub, screenshots, reports or chat messages. Do not paste it into any file in the project. If a key is exposed, revoke it in your provider's dashboard and create a new one.
+
+Your choices of provider and model (not the key) are saved in the app's settings.
+
+### 11.4 Example: OpenRouter
+
+1. Create an account at <https://openrouter.ai> and create **your own** API key there.
+2. In the app: **Settings → AI / Model → Provider: Cloud API**.
+3. Set **Cloud provider** to **OpenRouter**. The page shows *Base URL: `https://openrouter.ai/api/v1`* automatically.
+4. Paste your OpenRouter key into **Your API key** and press **Enter**; the status line shows **Using your session key.**
+5. Click **Check connection / refresh models**, then select a model.
+6. When **✅ Ready** appears, start your research from **New Research**.
+
+> **Do not** enter `http://localhost:11434` for a Cloud API. That address is only for Ollama running on the same computer as the app (section 10).
+
+### 11.5 Common problems
 
 | Problem | Fix |
 |---|---|
-| "Add your API key…" | Key missing. Add it in Settings or `.env` and restart. |
-| API error 401/403 | Wrong key, or the key does not belong to the selected provider. |
-| API error 404 / model not found | Choose a model from the refreshed list or check the model name. |
-| Cannot list models | Check provider selection, base URL (Custom) and internet access; type the model name manually if needed. |
+| Key box is empty after reloading the page | Expected: the key is kept only for the session. Enter it again. |
+| "Add your API key…" | No key entered. Paste your key in **Your API key** and press Enter. |
+| API error 401 / 403 | Wrong key, expired key, or the key belongs to a different provider than the one selected. |
+| API error 404 / model not found | Refresh models and choose one from the list, or check the model name you typed. |
+| Cannot list models | Check the provider selection, the base URL (Custom only) and your internet access; type the model name manually if needed. |
+| Ready never appears | Read the ⚠️ message at the bottom of the tab — it names what is missing (model, key or base URL). |
 
 ---
 
@@ -403,6 +448,8 @@ A copy is also saved in the project's `exports/` folder as `<task id>.pdf` or `<
 | Browser cannot open the app | Make sure the terminal is still running Streamlit, and open <http://localhost:8501>. |
 | Ollama cannot connect / model not found | See [section 10](#10-ollama-setup-and-usage). |
 | Cloud API fails | See [section 11](#11-cloud-api-setup). |
+| On a deployed app, Ollama does not connect | Expected: a deployed app cannot reach Ollama on your own computer. Choose **Cloud API** and enter your own key. |
+| I have to enter my API key again | Expected: the key is kept only in the current session and is not saved. |
 | "All searches failed or returned nothing" | Check your internet connection and try again; search services can briefly rate-limit. |
 | "No usable sources with readable text" | Rephrase the topic, or lower the minimum credibility score in Settings → Trust & verification. |
 | Report has zero findings | No claim passed verification. Use a more specific question or **Deep Dive**. |
@@ -415,38 +462,53 @@ A copy is also saved in the project's `exports/` folder as `<task id>.pdf` or `<
 
 The appropriate platform for this project is **Streamlit Community Cloud** (it runs `app.py` directly from a GitHub repository). It can also run on any server or VM that can run Python and Streamlit.
 
-> **Important — Ollama versus cloud deployment:** a deployed app cannot reach Ollama on your own computer (`localhost` means the server itself). Deploy with a **Cloud API** provider. Use Ollama on a server only if that server runs Ollama (or can reach one) and `OLLAMA_HOST` points to it.
+### 15.1 Local Ollama versus deployed Cloud API
 
-### Streamlit Community Cloud
+| | Local use | Deployed app |
+|---|---|---|
+| Model provider | **Ollama** on your own computer | **Cloud API** (for example OpenRouter, OpenAI, Anthropic) |
+| Ollama host | `http://localhost:11434` | Not usable (see below) |
+| API key | Not needed for Ollama | **Each visitor enters their own key** in Settings → AI / Model → Cloud API |
+| Cost | Free (your hardware) | Billed to each visitor's own provider account |
+
+> **Important:** a deployed Streamlit app **cannot access Ollama running on the owner's computer**. On a server, `localhost` means the server itself, not your PC. Visitors of a deployed app should choose **Cloud API**. Use Ollama on a server only if that server runs Ollama (or can reach one) and `OLLAMA_HOST` points to it.
+
+### 15.2 BYOK for visitors
+
+With Bring Your Own Key, **the project owner does not need to share a personal API key with visitors**. Each visitor opens **Settings → AI / Model → Cloud API**, picks a provider (for example **OpenRouter**), enters **their own** key, selects a model and starts research. Their key stays in their own session, is used for their research and is never saved to the server's settings, history or reports. They may need to enter it again after reloading the page or after their session ends.
+
+### 15.3 Streamlit Community Cloud
 
 1. **Prepare the project.** Make sure these exist at the top level: `app.py`, `requirements.txt`, and the folders `agents/`, `services/`, `tools/`, `models/`, `utils/` (and `exports/`).
-2. **Create a GitHub repository** and upload the project. `.gitignore` already keeps `.env`, `.data/`, `.venv/` and generated exports out of the repository — **never upload `.env` or your API key**.
+2. **Create a GitHub repository** and upload the project. `.gitignore` already keeps `.env`, `.data/`, `.venv/` and generated exports out of the repository — **never upload `.env` or any API key**.
 3. **Sign in** at <https://share.streamlit.io> with GitHub and click **Create app**.
 4. **Settings:** choose your repository and branch, and set **Main file path** to `app.py`. Streamlit installs packages from `requirements.txt` automatically.
-5. **Add secrets** (Advanced settings → Secrets) in this format:
+5. **Secrets (optional).** With BYOK you do **not** need to add an API key. You may add `CONTACT_EMAIL = "you@example.com"` (more reliable OpenAlex/Crossref access) or `LLM_BASE_URL` for a Custom provider. Secrets use this format:
    ```toml
-   LLM_API_KEY = "your-api-key"
+   CONTACT_EMAIL = "you@example.com"
    ```
-   Add `LLM_BASE_URL = "https://host/v1"` only for a Custom provider, and optionally `CONTACT_EMAIL = "you@example.com"`. Top-level secrets are available to the app as environment variables, which is how the app reads them.
-6. Click **Deploy**. When it starts, open **Settings → AI / Model**, choose **Cloud API**, pick the provider, click **Check connection / refresh models** and select a model.
+   Add `LLM_API_KEY` **only** if you deliberately want a default key that visitors without their own key will use (and you will pay for). Leave it out for strict bring-your-own-key use.
+6. Click **Deploy**. When the app starts, tell visitors to open **Settings → AI / Model**, choose **Cloud API**, pick a provider, enter their own key, click **Check connection / refresh models**, and select a model.
 
-### Server / VM
+### 15.4 Server / VM
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 streamlit run app.py --server.port 8501 --server.address 0.0.0.0
 ```
-Set `LLM_API_KEY` (and `OLLAMA_HOST` if needed) as environment variables or in `.env`, and put the app behind a reverse proxy or firewall.
+Set `OLLAMA_HOST` (only if using Ollama on the server) as an environment variable or in `.env`, and put the app behind a reverse proxy or firewall. `LLM_API_KEY` is optional and only needed if you want a default key.
 
 > **Warnings:**
-> - The app has **no login**. Anyone who can open the URL can run research with your API key (and incur cost) and can see saved history and change Settings; settings and history are shared by everyone using the same running copy.
+> - The app has **no login**. Anyone who can open the URL can run research, see saved history and change Settings. History and settings (provider/model choices, not API keys) are stored on the server and shared by everyone using the same running copy.
+> - If you set `LLM_API_KEY` on the server, visitors who enter no key will use it and run up **your** costs. Leave it unset for BYOK.
 > - History and settings are stored in `.data/` on the server. On hosts with temporary storage, they may be lost when the app restarts or redeploys.
 
 ---
 
 ## 16. Example Workflow
 
+0. Make sure **Settings → AI / Model** shows **✅ Ready** (Ollama: model selected; Cloud API: your own key entered and a model selected).
 1. Open **New Research** and click the example **"What does research say about microplastics and human health?"** — or type any topic of your own. Keep **Standard** selected.
 2. Click **Start research**. The progress panel appears immediately.
 3. Watch the stages: **Planning** (queries are created), **Searching** (🔎 lines show queries per collection and the **Searches** counter rises), **Evaluating** (**Unique sources** and **Sources kept** fill in), **Verifying** (**Claims checked** and **Findings** fill in), **Conflict checking**, **Writing**. The activity log shows each step with timings.
@@ -470,4 +532,5 @@ Set `LLM_API_KEY` (and `OLLAMA_HOST` if needed) as environment variables or in `
 - **Reports may contain few or no findings** for narrow or obscure topics.
 - **PDF export** uses a standard font, so some special characters may be replaced.
 - **Settings and history are local to the running copy** of the app (`.data/`), shared by everyone using it, and there is no user login.
-- **The API key typed in Settings is not saved** to disk and must be re-entered after a restart unless it is set in `.env` or deployment secrets.
+- **Your cloud API key is session-only.** It is not saved to settings, history, reports or any project file, so you may need to enter it again after your session ends or the page is reloaded.
+- **A deployed app cannot use your local Ollama.** Deployed use requires a Cloud API and each visitor's own key (unless the owner sets a default `LLM_API_KEY`).
